@@ -3,13 +3,9 @@ package com.xquty.aimassistant
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.hardware.display.DisplayManager
-import android.hardware.display.VirtualDisplay
-import android.media.ImageReader
-import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
-import android.util.DisplayMetrics
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,26 +23,37 @@ private val Accent = Color(0xFF62D6A5)
 private val Background = Color(0xFF101820)
 
 class MainActivity : ComponentActivity() {
-    private var projection: MediaProjection? = null
-    private var virtualDisplay: VirtualDisplay? = null
-    private var imageReader: ImageReader? = null
-    private var onStatus: ((String) -> Unit)? = null
-
     private val screenShareLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                beginCapture(result.resultCode, result.data!!)
+                val serviceIntent = Intent(this, ScreenCaptureService::class.java).apply {
+                    action = ScreenCaptureService.ACTION_START
+                    putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, result.resultCode)
+                    putExtra(ScreenCaptureService.EXTRA_RESULT_DATA, result.data)
+                }
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                    statusUpdate?.invoke("Screen-sharing permission approved. Capture service started.")
+                } catch (e: Exception) {
+                    statusUpdate?.invoke("Could not start capture service: ${e.message ?: "unknown error"}")
+                }
             } else {
-                onStatus?.invoke("Screen sharing permission was not granted.")
+                statusUpdate?.invoke("Screen sharing permission was not granted.")
             }
         }
+
+    private var statusUpdate: ((String) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             var started by remember { mutableStateOf(false) }
             var status by remember { mutableStateOf("Ready. Press Start to reveal screen sharing.") }
-            onStatus = { status = it }
+            statusUpdate = { status = it }
 
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = Accent,
@@ -81,7 +88,7 @@ class MainActivity : ComponentActivity() {
                             }
                             Spacer(Modifier.height(12.dp))
                             OutlinedButton(onClick = {
-                                stopCapture()
+                                stopService(Intent(this@MainActivity, ScreenCaptureService::class.java))
                                 started = false
                                 status = "Capture stopped."
                             }, modifier = Modifier.fillMaxWidth()) {
@@ -113,63 +120,8 @@ class MainActivity : ComponentActivity() {
         screenShareLauncher.launch(manager.createScreenCaptureIntent())
     }
 
-    private fun beginCapture(resultCode: Int, data: Intent) {
-        stopCapture()
-        try {
-            val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            projection = manager.getMediaProjection(resultCode, data)
-            val metrics = DisplayMetrics()
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getRealMetrics(metrics)
-            val width = metrics.widthPixels.coerceAtLeast(1)
-            val height = metrics.heightPixels.coerceAtLeast(1)
-            val density = metrics.densityDpi
-            imageReader = ImageReader.newInstance(width, height, android.graphics.PixelFormat.RGBA_8888, 2)
-            imageReader?.setOnImageAvailableListener({ reader ->
-                reader.acquireLatestImage()?.close()
-            }, null)
-            virtualDisplay = projection?.createVirtualDisplay(
-                "ScreenSharePreview",
-                width,
-                height,
-                density,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                imageReader?.surface,
-                null,
-                null
-            )
-            projection?.registerCallback(object : MediaProjection.Callback() {
-                override fun onStop() {
-                    runOnUiThread {
-                        releaseCapture()
-                        onStatus?.invoke("Android stopped screen sharing.")
-                    }
-                }
-            }, null)
-            onStatus?.invoke("Screen sharing is active. Android's screen-sharing indicator is visible.")
-        } catch (e: Exception) {
-            stopCapture()
-            onStatus?.invoke("Could not start screen sharing: ${e.message ?: "unknown error"}")
-        }
-    }
-
-    private fun stopCapture() {
-        try { projection?.stop() } catch (_: Exception) { }
-        releaseCapture()
-        onStatus?.invoke("Capture stopped.")
-    }
-
-    private fun releaseCapture() {
-        virtualDisplay?.release()
-        virtualDisplay = null
-        imageReader?.setOnImageAvailableListener(null, null)
-        imageReader?.close()
-        imageReader = null
-        projection = null
-    }
-
     override fun onDestroy() {
-        stopCapture()
+        statusUpdate = null
         super.onDestroy()
     }
 }
