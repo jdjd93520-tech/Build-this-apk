@@ -195,7 +195,11 @@ public class AimbotManager {
         float[] numDetections = new float[1];
         
         Object[] inputs = {tensorImage.getBuffer()};
-        Object[] outputs = {outputLocations, outputClasses, outputScores, numDetections};
+        Map<Integer, Object> outputs = new HashMap<>();
+        outputs.put(0, outputLocations);
+        outputs.put(1, outputClasses);
+        outputs.put(2, outputScores);
+        outputs.put(3, numDetections);
         
         // Executar inferência
         tfliteInterpreter.runForMultipleInputsOutputs(inputs, outputs);
