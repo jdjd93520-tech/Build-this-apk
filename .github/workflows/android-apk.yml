@@ -3,6 +3,9 @@ name: Build Android APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'xquty-aim-assistant/**'
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,13 +26,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '7.6.1'
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+          gradle-version: '8.9'
+      - name: Build XQUTY debug APK
+        run: gradle --no-daemon -p xquty-aim-assistant assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: xquty-aim-assistant-debug-apk
+          path: xquty-aim-assistant/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
