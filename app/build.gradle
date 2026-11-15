@@ -36,8 +36,8 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
 
     // Shizuku
-    implementation 'dev.rikka.shizuku:api:12.2.0'
-    implementation 'dev.rikka.shizuku:provider:12.2.0'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
 
     // Camera and Media
     implementation 'androidx.camera:camera-core:1.3.0'
