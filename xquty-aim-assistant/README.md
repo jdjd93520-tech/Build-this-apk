@@ -1,16 +1,14 @@
-# XQUTY AIM ASSISTANT — Android starter
+# Screen Share Preview
 
-## Included
-- Black + gold Compose UI
-- Local access-key login
-- First-run admin PIN setup
-- Local key add/delete panel
-- Manual angle and rebound reference sliders
+A small Android screen-capture demo built with MediaProjection.
 
-## Important limitations
-This is a **local starter build**, not a production licensing service. Keys are stored on one device and can be inspected or reset by someone with device access. There are no real 7-day/lifetime expirations, remote activation, cloud admin panel, or multi-device validation yet. Those require a secure backend and server-side key verification.
+## Use
+1. Install and open the APK.
+2. Tap **Start**.
+3. Tap **Share Entire Screen**.
+4. Approve Android's system screen-sharing prompt.
+5. Tap **Stop** to end capture.
 
-The app does not overlay on, modify, automate, or manipulate Carrom Pool. The calculators are manual reference tools.
+The app receives screen frames locally and immediately releases them. It does not save or upload frames, detect game targets, automate aiming, inject touch events, or control other apps.
 
-## Build APK
-The repository workflow builds this project and uploads the debug APK as an artifact.
+This starter build does not contain a YOLO model or object-detection inference. Shizuku is not required for Android's user-approved MediaProjection screen-sharing flow.
